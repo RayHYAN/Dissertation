@@ -17,7 +17,10 @@ class EEG_data_class(object):
     def __init__(self, part_ID, data) -> None:
         self.ID = part_ID
         self.EEG_data = {EEG_channels[col]: data[col] for col in range(1,8)}
-        self.event_details = Event_time_details(part_ID) # including date, start_time, events_info
+        self.event_details = None # need to be set after init
+
+    def set_event_details(self, event_details: Event_time_details):
+        self.event_details = event_details # including date, start_time, events_info
 
     def _get_event_period_by_name(self, event):
         exp_start_time = self.event_details.exp_start_time

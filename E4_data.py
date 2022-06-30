@@ -17,7 +17,10 @@ class E4_data_class(object):
     def __init__(self, part_ID, data) -> None:
         self.ID = part_ID
         self.E4_data = data # each file including: start_time, Hz, data
-        self.event_details = Event_time_details(part_ID)
+        self.event_details = None # need to be set after init
+
+    def set_event_details(self, event_details: Event_time_details):
+        self.event_details = event_details
 
     def _get_event_period_by_name(self, file_name, event_name):
         exp_start_time = float(self.E4_data[file_name]['time'])
