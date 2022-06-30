@@ -36,7 +36,8 @@ class Event_time_details(object):
         self.exp_date = date
         self.exp_start_time = local2unix(date + " " + time_hms)
 
-    def set_event(self, event_name, start, end):
+    def set_event(self, event_name, start, end, validation = True):
+        # validation: if False, means the time is estimated, without verification
         if event_name not in all_EEG_events.values():
             print("The event ({}) is not in the event list. Please check!".format(event_name))
             return
