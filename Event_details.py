@@ -17,11 +17,12 @@ all_EEG_events = {
     6: "break",
     7: "family_inter",
     8: "takeoff_EEG",
-    9: "setup_BIS",
-    10: "baseline_BIS",
-    11: "familiar_music_2",
-    12: "family_inter_2",
-    13: "takeoff_BIS_E4"
+    9: "break2",
+    10: "setup_BIS",
+    11: "baseline_BIS",
+    12: "familiar_music_2",
+    13: "family_inter_2",
+    14: "takeoff_BIS_E4"
 }
 
 class Event_time_details(object):
