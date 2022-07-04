@@ -44,4 +44,4 @@ class Event_time_details(object):
             return
         start_timestamp = local2unix(self.exp_date + " " + start) if start != None else None
         end_timestamp = local2unix(self.exp_date + " " + end) if end != None else None
-        self.events_info[event_name] = {"start": start_timestamp, "end": end_timestamp}
+        self.events_info[event_name] = {"start": start_timestamp, "end": end_timestamp, 'valid': validation}
