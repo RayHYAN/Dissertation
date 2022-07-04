@@ -12,13 +12,12 @@ from basic_info import data_folder
 from basic_fun import unix2local
 from Event_details import Event_time_details
 import EEG_data, E4_data
-import data_setup
 
 event_details_path = os.path.join(data_folder, './event_details.csv')
 exp_info_path = os.path.join(data_folder, './exp_info.csv')
 
 def save_data_to_csv():
-    EEG_files, _ = data_setup.set_up()
+    EEG_files = EEG_data.read_all_VG_files()
     event_details_dic = {
         'partID': [],
         'event': [],
