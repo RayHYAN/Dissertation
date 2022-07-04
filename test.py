@@ -23,7 +23,7 @@ VG_file_names = { # 1&5, 2&6, 3&4 similar, EEG data (1-7)
     5: 'EEG F7-01',
     6: 'EEG F8-O2',
     7: 'EEG Fpz-F8',
-    8: 'Positiongram',
+    8: 'Positiongram', # only exist in VG_01, VG_02, VG_03, VG_05; in these files, we need to change index (9-13) to (8-12)
     9: 'PulseOxy Infrare',
     10: 'PulseOxy Red Hea',
     11: 'Respiration x',
