@@ -34,13 +34,31 @@ VG_file_names = { # 1&5, 2&6, 3&4 similar, EEG data (1-7)
 if __name__ == '__main__':
     # Load EEG and E4 (physiological data)
     EEG_files, E4_files = data_load_save.set_up()
+    #plt.plot(EEG_files[''])
 
     # Visualize VG data (EEG 250Hz)
-    EEG_partID, EEG_channel, EEG_event = 'VG_06', 'Fpz-O1', 'familiar_music'
-    plt.plot(EEG_files[EEG_partID].get_EEG_by_channel_and_event(EEG_channel, EEG_event))
+    # EEG_partID, EEG_channel, EEG_event = 'VG_06', 'Fpz-O1', 'familiar_music'
+    #plt.plot(EEG_files[EEG_partID].get_EEG_by_channel_and_event(EEG_channel, EEG_event))
+    # X = EEG_files[EEG_partID].get_EEG_by_channel_and_event(EEG_channel, EEG_event)
+    channels = [1,2,3,4,5,6,7]
+    EEG_partID = 'VG_01'
+    EEG_event = 'familiar_music'
 
-    # Visualize E4 data (physiological data)
-    E4_partID, E4_file, E4_event = 'VG_01', 'HR', 'exper_video'
-    plt.plot(E4_files[E4_partID].get_E4_by_filename_and_event(E4_file, E4_event))
+    persons = ['VG_01', 'VG_02', 'VG_03', 'VG_05', 'VG_06', 'VG_07', 'VG_08','VG_09', 'VG_10', 'VH_01', 'VH_02', 'VH_03']
+    EEG_data_person =[]
+    for person in persons:
+        for channel in channels:
+            channel_data = EEG_files[EEG_partID].get_EEG_by_channel_and_event(channel, EEG_event)
+            EEG_data_person.append(channel_data)
+        
+    EEG_data_person = np.array(EEG_data_person)
+    print(EEG_data_person)
+    print(EEG_data_person.shape)
+    print(type(EEG_data_person))
 
-    plt.show()
+
+    # # Visualize E4 data (physiological data)
+    # E4_partID, E4_file, E4_event = 'VG_01', 'HR', 'exper_video'
+    # plt.plot(E4_files[E4_partID].get_E4_by_filename_and_event(E4_file, E4_event))
+
+    #plt.show()    
