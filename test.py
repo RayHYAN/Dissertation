@@ -14,22 +14,7 @@ from matplotlib import pyplot as plt
 import data_load_save
 
 E4_file_names = ['ACC', 'BVP', 'EDA', 'HR', 'IBI', 'TEMP'] # physiological data, tags.csv not included
-VG_file_names = { # 1&5, 2&6, 3&4 similar, EEG data (1-7)
-    0: 'Accelero Norm',
-    1: 'EEG Fpz-O1',
-    2: 'EEG Fpz-O2',
-    3: 'EEG Fpz-F7',
-    4: 'EEG F8-F7',
-    5: 'EEG F7-01',
-    6: 'EEG F8-O2',
-    7: 'EEG Fpz-F8',
-    8: 'Positiongram', # not exist in VG_01, VG_02, VG_03, VG_05; in these files, we need to change index (9-13) to (8-12)
-    9: 'PulseOxy Infrare',
-    10: 'PulseOxy Red Hea',
-    11: 'Respiration x',
-    12: 'Respiration y',
-    13: 'Respiration z'
-}
+EEG_channels = {1:"Fpz-O1", 2:"Fpz-O2", 3:"Fpz-F7", 4:"F8-F7", 5:"F7-01", 6:"F8-O2", 7:"Fpz-F8"}
 
 if __name__ == '__main__':
     # Load EEG and E4 (physiological data)
