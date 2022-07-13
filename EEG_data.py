@@ -42,25 +42,38 @@ class EEG_data_class(object):
 def read_all_VG_files():
     return {part_ID: read_VG_file(part_ID) for part_ID in VG_file_paths.keys()}
 
-def read_VG_file(part_ID):
+def read_VG_file(part_ID, exclude_channels = []):
     try:
         if part_ID not in VG_file_paths.keys():
             raise IndexError("The given part_ID ({}) is not included".format(part_ID))
     except RuntimeError as e:
         print("Error:", e)
     VG_file_path = os.path.join(data_folder, VG_file_paths[part_ID])
-    VG_file = mne.io.read_raw_edf(VG_file_path)
+    VG_file = mne.io.read_raw_edf(VG_file_path, exclude = exclude_channels)
     data = EEG_data_class(part_ID, VG_file.get_data())
     # print(VG_file.ch_names)
     print("Successfully loaded {} VG file (EEG data).".format(part_ID))
     return data
 
+def read_all_VG_to_Raw():
+    return {part_ID: read_VG_to_Raw(part_ID) for part_ID in VG_file_paths.keys()}
 
+def read_VG_to_Raw(part_ID):
+    exclude_channels = ['Accelero Norm', 'Positiongram', 'PulseOxy Infrare', 'PulseOxy Red Hea', 'Respiration x', 'Respiration y', 'Respiration z']
+    VG_file_path = os.path.join(data_folder, VG_file_paths[part_ID])
+    raw = mne.io.read_raw_edf(VG_file_path, exclude=exclude_channels, preload = True)
+    return raw
+
+# test: to raw
+# raw = read_VG_to_Raw('VG_01')
+# data = raw.get_data()
+# mne.filter.filter_data(data, sfreq=250, l_freq=0, h_freq=100)
+
+# test: read all EEG files
 # EEG_files = read_all_VG_files()
 # # VG_06 events info
 # EEG_files['VG_06'].event_details.set_exp_datetime("05-10-2021", "13:40:50")
 # EEG_files['VG_06'].event_details.set_event("familiar_music", "13:58:00", "14:04:00")
 
-# test
 # print(EEG_files['VG_06'].get_EEG_by_channel_and_event(EEG_channels[1], 'familiar_music'))
 # print(EEG_files['VG_06'].get_EEG_by_channel_and_event(1, 'familiar_music'))
