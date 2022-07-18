@@ -5,7 +5,9 @@ Created on Wed Jun 29 23:14:19 2022
 @author: Zerui Mu
 """
 
+import json
 from basic_fun import local2unix
+from basic_info import EEG_buffer
 
 all_EEG_events = {
     0: "setup",
@@ -29,7 +31,7 @@ class Event_time_details(object):
     def __init__(self, part_ID) -> None:
         # Note: self.exp_start_time is for EEG file, since different E4 files have different start_timestamp
         self.ID = part_ID
-        self.events_info = {}
+        self.events_info = {} # with the actual event name and its start and end time (without buffer)
         self.exp_date = None # need to be set after init
         self.exp_start_time = None # need to be set after init
         
@@ -45,3 +47,12 @@ class Event_time_details(object):
         start_timestamp = local2unix(self.exp_date + " " + start) if start != None else None
         end_timestamp = local2unix(self.exp_date + " " + end) if end != None else None
         self.events_info[event_name] = {"start": start_timestamp, "end": end_timestamp, 'valid': validation}
+
+    def save_event_window_to_json(self, event_name, json_path, windows = 1):
+        exp_start = self.exp_start_time
+        start = int(self.events_info[event_name]['start'] - exp_start)
+        end = int(self.events_info[event_name]['end'] - exp_start)
+        spindles = [{'start': start*1.0, 'end': start + 1.0} \
+            for start in range(start+EEG_buffer, end-EEG_buffer, windows)]
+        with open(json_path, 'w') as f:
+            json.dump(spindles ,f)

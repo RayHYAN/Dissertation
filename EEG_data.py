@@ -6,6 +6,7 @@ Created on Tue Jun 28 21:58:32 2022
 """
 
 import os
+from typing import Dict
 import mne
 
 from basic_info import data_folder, VG_file_paths, VG_Hz, EEG_buffer
@@ -23,6 +24,7 @@ class EEG_data_class(object):
         self.event_details = event_details # including date, start_time, events_info
 
     def _get_event_period_by_name(self, event):
+        # return the period of time with 2 buffers (initially 30 sec)
         exp_start_time = self.event_details.exp_start_time
         event_start = self.event_details.events_info[event]["start"]
         event_end = self.event_details.events_info[event]["end"]
@@ -39,10 +41,10 @@ class EEG_data_class(object):
             print("The input channel ({}) is wrong!, Please check.".format(channel))
 
 
-def read_all_VG_files():
+def read_all_VG_files() -> Dict[str, EEG_data_class]:
     return {part_ID: read_VG_file(part_ID) for part_ID in VG_file_paths.keys()}
 
-def read_VG_file(part_ID, exclude_channels = []):
+def read_VG_file(part_ID, exclude_channels = []) -> EEG_data_class:
     try:
         if part_ID not in VG_file_paths.keys():
             raise IndexError("The given part_ID ({}) is not included".format(part_ID))

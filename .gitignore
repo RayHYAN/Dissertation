@@ -1,7 +1,7 @@
 # self-input files
 data_setup.py
 test.ipynb
-dosed_test.py
+/dosed/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

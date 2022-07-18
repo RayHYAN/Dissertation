@@ -6,6 +6,7 @@ Created on Wed Jun 29 18:04:32 2022
 """
 
 import os
+from typing import Dict
 import pandas as pd
 
 from basic_info import data_folder, E4_file_paths, E4_buffer
@@ -34,10 +35,10 @@ class E4_data_class(object):
         return self.E4_data[file_name]['data'].iloc[int(start * Hz): int(end * Hz),:]
 
 
-def read_all_E4_files():
+def read_all_E4_files() -> Dict[str, E4_data_class]:
     return {part_ID: read_E4_file(part_ID) for part_ID in E4_file_paths.keys()}
 
-def read_E4_file(part_ID):
+def read_E4_file(part_ID) -> E4_data_class:
     try:
         if part_ID not in E4_file_paths.keys():
             raise IndexError("The given part_ID ({}) is not included".format(part_ID))
