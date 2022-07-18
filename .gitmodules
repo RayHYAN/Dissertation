@@ -1,0 +1,3 @@
+[submodule "EEG_DL"]
+	path = EEG_DL
+	url = git@github.com:SuperBruceJia/EEG-DL.git
