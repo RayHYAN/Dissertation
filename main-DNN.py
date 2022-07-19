@@ -29,8 +29,8 @@ sess = tf.Session(config=config)
 
 # Your Dataset Location, for example EEG-Motor-Movement-Imagery-Dataset
 # The CSV file should be named as training_set.csv, training_label.csv, test_set.csv, and test_label.csv
-DIR = r'../data/EEG-Motor-Movement-Imagery-Dataset/14-Subjects-Dataset/'
-SAVE = r'./EEG-DL/Saved_Files/' + Model + '/'
+DIR = r'../data/EEG-Motor-Movement-Imagery-Dataset/Ray/'
+SAVE = r'./Dissertation/EEG_DL/Saved_Files/' + Model + '/'
 if not os.path.exists(SAVE):  # If the SAVE folder doesn't exist, create one
     os.mkdir(SAVE)
 
@@ -59,7 +59,7 @@ print("test_labels: {}".format(test_labels.shape))
 n_class = classes
 n_hidden  = 64    # The number of hidden units in the first fully-connected layer
 num_epoch = 300   # The number of Epochs that the Model run
-keep_rate = 0.70  # Keep rate of the Dropout
+keep_rate = 0.75  # Keep rate of the Dropout
 lr = tf.constant(1e-4, dtype=tf.float32)  # Learning rate
 lr_decay_epoch = 50    # Every (50) epochs, the learning rate decays
 lr_decay       = 0.50  # Learning rate Decay by (50%)
@@ -77,7 +77,7 @@ biases_2  = tf.Variable(tf.constant(0.01, shape=[n_class]))
 # Define Placeholders
 # x = tf.placeholder(tf.float32, [None, 64 * 64])
 # y = tf.placeholder(tf.float32, [None, 4])
-x = tf.placeholder(tf.float32, [None, 64 * 10])
+x = tf.placeholder(tf.float32, [None, 64 * 64])
 y = tf.placeholder(tf.float32, [None, classes])
 keep_prob = tf.placeholder(tf.float32)
 
@@ -129,7 +129,7 @@ for epoch in range(num_epoch + 1):
     # Show Accuracy and Loss on Training and Test Set
     # Here, for training set, we only show the result of first 100 samples
     # If u want to show the result on the entire training set, please modify it.
-    train_accuracy, train_loss = sess.run([Global_Average_Accuracy, loss], feed_dict={x: train_data[0:100], y: train_labels[0:100], keep_prob: 1.0})
+    train_accuracy, train_loss = sess.run([Global_Average_Accuracy, loss], feed_dict={x: train_data, y: train_labels, keep_prob: 1.0})
     Test_summary, test_accuracy, test_loss = sess.run([merged, Global_Average_Accuracy, loss], feed_dict={x: test_data, y: test_labels, keep_prob: 1.0})
     test_writer.add_summary(Test_summary, epoch)
 

@@ -40,6 +40,13 @@ class EEG_data_class(object):
         else:
             print("The input channel ({}) is wrong!, Please check.".format(channel))
 
+    def get_EEG_by_event(self, event_name):
+        # get all 7 EEG channels data
+        event_data = []
+        for channel in EEG_channels:
+            channel_data = self.get_EEG_by_channel_and_event(channel, event_name)
+            event_data.append(channel_data)
+        return event_data
 
 def read_all_VG_files() -> Dict[str, EEG_data_class]:
     return {part_ID: read_VG_file(part_ID) for part_ID in VG_file_paths.keys()}

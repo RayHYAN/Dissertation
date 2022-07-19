@@ -48,6 +48,12 @@ class Event_time_details(object):
         end_timestamp = local2unix(self.exp_date + " " + end) if end != None else None
         self.events_info[event_name] = {"start": start_timestamp, "end": end_timestamp, 'valid': validation}
 
+    def check_has_event(self, event_name) -> bool:
+        return event_name in self.events_info.keys()
+
+    def check_event_has_start_and_end(self, event_name) -> bool:
+        return (self.events_info[event_name]['start'] != None and self.events_info[event_name]['end'] != None)
+
     def save_event_window_to_json(self, event_name, json_path, windows = 1):
         exp_start = self.exp_start_time
         start = int(self.events_info[event_name]['start'] - exp_start)

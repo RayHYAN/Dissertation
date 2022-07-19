@@ -29,16 +29,17 @@ sess = tf.Session(config=config)
 
 # Your Dataset Location, for example EEG-Motor-Movement-Imagery-Dataset
 # The CSV file should be named as training_set.csv, training_label.csv, test_set.csv, and test_label.csv
-DIR = r'../data/EEG-Motor-Movement-Imagery-Dataset/14-Subjects-Dataset/'
-SAVE = r'./EEG-DL/Saved_Files/' + Model + '/'
+DIR = r'../data/EEG-Motor-Movement-Imagery-Dataset/Ray/'
+SAVE = r'./Dissertation/EEG_DL/Saved_Files/' + Model + '/'
 if not os.path.exists(SAVE):  # If the SAVE folder doesn't exist, create one
     os.mkdir(SAVE)
 
 # Load the dataset, here it uses one-hot representation for labels
+classes = 4
 train_data, train_labels, test_data, test_labels = DatasetLoader(DIR=DIR)
-train_labels = tf.one_hot(indices=train_labels, depth=4)
+train_labels = tf.one_hot(indices=train_labels, depth=classes)
 train_labels = tf.squeeze(train_labels).eval(session=sess)
-test_labels = tf.one_hot(indices=test_labels, depth=4)
+test_labels = tf.one_hot(indices=test_labels, depth=classes)
 test_labels = tf.squeeze(test_labels).eval(session=sess)
 
 # Model Hyper-parameters
@@ -46,7 +47,7 @@ n_input   = 64   # The input size of signals at each time
 max_time  = 64   # The unfolded time slices of the LSTM Model
 lstm_size = 256  # The number of RNNs inside the LSTM Model
 
-n_class   = 4     # The number of classification classes
+n_class   = classes     # The number of classification classes
 n_hidden  = 64    # The number of hidden units in the first fully-connected layer
 num_epoch = 300   # The number of Epochs that the Model run
 keep_rate = 0.75  # Keep rate of the Dropout
@@ -55,7 +56,7 @@ lr = tf.constant(1e-4, dtype=tf.float32)  # Learning rate
 lr_decay_epoch = 50    # Every (50) epochs, the learning rate decays
 lr_decay       = 0.50  # Learning rate Decay by (50%)
 
-batch_size = 512
+batch_size = 256
 n_batch = train_data.shape[0] // batch_size
 
 # Initialize Model Parameters (Network Weights and Biases)
@@ -66,9 +67,8 @@ weights_2 = tf.Variable(tf.truncated_normal([n_hidden, n_class], stddev=0.01))
 biases_2  = tf.Variable(tf.constant(0.01, shape=[n_class]))
 
 # Define Placeholders
-# x = tf.placeholder(tf.float32, [None, 64 * 64])
-x = tf.placeholder(tf.float32, [None, 64 * 10])
-y = tf.placeholder(tf.float32, [None, 4])
+x = tf.placeholder(tf.float32, [None, 64 * 64])
+y = tf.placeholder(tf.float32, [None, classes])
 keep_prob = tf.placeholder(tf.float32)
 
 # Load Model Network

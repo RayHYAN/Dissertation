@@ -1,7 +1,9 @@
 # self-input files
 data_setup.py
 test.ipynb
-/dosed/*
+dosed/
+EEG_DL/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -132,3 +134,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+Ray/test.py
+EEG_DL
+EEG_DL
+main-DNN.py

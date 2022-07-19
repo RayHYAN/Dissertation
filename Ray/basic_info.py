@@ -5,7 +5,8 @@ Created on Wed Jun 29 23:59:34 2022
 @author: Zerui Mu
 """
 
-data_folder = r'./CARE_HOME_DATA'
+data_folder = r'../data/CARE_HOME_DATA/'
+motor_movement_data_folder = r'../data/EEG-Motor-Movement-Imagery-Dataset/'
 E4_file_paths = {
     'VG_01': r'./VG01/E4_8921_15_44/',
     # 'VG_02': None,
