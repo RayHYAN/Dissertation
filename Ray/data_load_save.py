@@ -9,10 +9,10 @@ import os
 import pandas as pd
 import random
 
-from basic_info import data_folder, motor_movement_data_folder, EEG_buffer
-from basic_fun import unix2local
-from Event_details import Event_time_details
-import EEG_data, E4_data
+from Ray.basic_info import data_folder, motor_movement_data_folder, EEG_buffer, VG_Hz
+from Ray.basic_fun import unix2local
+from Ray.Event_details import Event_time_details
+from Ray import EEG_data, E4_data
 
 event_details_path = os.path.join(data_folder, './event_details.csv')
 exp_info_path = os.path.join(data_folder, './exp_info.csv')
@@ -74,6 +74,8 @@ def load_info_from_csv():
     return ev_details
 
 def set_up(isEEG = True, isE4 = True):
+    # isEEG: load EEG data or not
+    # isE4: load E4 data or not
     EEG_files = EEG_data.read_all_VG_files() if isEEG == True else None
     E4_files = E4_data.read_all_E4_files() if isE4 == True else None
     ev_details = load_info_from_csv()
@@ -87,9 +89,11 @@ def set_up(isEEG = True, isE4 = True):
 
     return EEG_files, E4_files
 
-def save_EEG_to_csv(event_list, windows = 1):
-    EEG_files, _ = set_up(isE4 = False)
-    row_size, train_ratio = 4096, 0.9
+def gen_EEG_traintest_to_csv_mix(event_list, multiply, windows = 1, train_ratio = 0.9, EEG_files = None):
+    # mix all partcipants data together and separate train_set and test_set by train_ratio
+    if EEG_files == None:
+        EEG_files, _ = set_up(isE4 = False)
+    row_size, fs = 4096, VG_Hz
     channel_batch_size = {
         'Fpz-O1': row_size // 7,
         'Fpz-O2': row_size // 7,
@@ -99,7 +103,6 @@ def save_EEG_to_csv(event_list, windows = 1):
         'F8-O2': row_size // 7,
         'Fpz-F8': row_size - (row_size // 7) * 6,
     }
-    fs = 250
     data_label_list = []
     label_dic = {label: i for i, label in enumerate(event_list)}
 
@@ -114,9 +117,10 @@ def save_EEG_to_csv(event_list, windows = 1):
                         part_data = EEG_files[part].get_EEG_by_channel_and_event(channel=channel, event_name=event_name)
                         row_data.extend(part_data[start: start + size])
                     data_label_list.append((row_data, label_dic[event_name]))
+                    
     random.shuffle(data_label_list)
-    train_data_df = pd.DataFrame([dat[0] for dat in data_label_list[:round(len(data_label_list)*train_ratio)]])
-    test_data_df = pd.DataFrame([dat[0] for dat in data_label_list[round(len(data_label_list)*train_ratio):]])
+    train_data_df = pd.DataFrame([dat[0] for dat in data_label_list[:round(len(data_label_list)*train_ratio)]]).multiply(multiply)
+    test_data_df = pd.DataFrame([dat[0] for dat in data_label_list[round(len(data_label_list)*train_ratio):]]).multiply(multiply)
     train_label_df = pd.DataFrame([dat[1] for dat in data_label_list[:round(len(data_label_list)*train_ratio)]])
     test_label_df = pd.DataFrame([dat[1] for dat in data_label_list[round(len(data_label_list)*train_ratio):]])
     print(train_data_df.shape)
@@ -125,8 +129,63 @@ def save_EEG_to_csv(event_list, windows = 1):
     print(test_label_df.shape)
     return train_data_df, test_data_df, train_label_df, test_label_df
 
-# train_data, test_data, train_label, test_label = save_EEG_to_csv(["familiar_music", "wildlife_video", "family_inter", "Tchaikovsky"])
-# train_data.to_csv(os.path.join(motor_movement_data_folder, './Ray/training_set.csv'), header=None, index=None)
-# test_data.to_csv(os.path.join(motor_movement_data_folder, './Ray/test_set.csv'), header=None, index=None)
-# train_label.to_csv(os.path.join(motor_movement_data_folder, './Ray/training_label.csv'), header=None, index=None)
-# test_label.to_csv(os.path.join(motor_movement_data_folder, './Ray/test_label.csv'), header=None, index=None)
+def gen_EEG_traintest_to_csv_part(event_list, multiply, windows = 1, train_ratio = 0.9, EEG_files = None):
+    # separate train_set and test_set by participant and the train_ratio
+    if EEG_files == None:
+        EEG_files, _ = set_up(isE4 = False)
+    row_size, fs = 4096, VG_Hz
+    channel_batch_size = {
+        'Fpz-O1': row_size // 7,
+        'Fpz-O2': row_size // 7,
+        'Fpz-F7': row_size // 7,
+        'F8-F7': row_size // 7,
+        'F7-01': row_size // 7,
+        'F8-O2': row_size // 7,
+        'Fpz-F8': row_size - (row_size // 7) * 6,
+    }
+    label_dic = {label: i for i, label in enumerate(event_list)}
+    # train and test participants list
+    test_part_num = round(len(EEG_files.keys()) * (1-train_ratio))
+    test_part_num = test_part_num if test_part_num != 0 else 1
+    test_part_list = random.sample(list(EEG_files.keys()), test_part_num)
+    train_part_list = [part for part in EEG_files.keys() if part not in test_part_list]
+
+    # train data and labels
+    train_data_label = []
+    for part in train_part_list:
+        for event_name in event_list:
+            if EEG_files[part].event_details.check_has_event(event_name) and EEG_files[part].event_details.check_event_has_start_and_end(event_name):
+                data_length = (EEG_files[part].event_details.events_info[event_name]['end'] - \
+                    EEG_files[part].event_details.events_info[event_name]['start'] - 2 * EEG_buffer) * fs
+                for start in range(0, int(data_length - row_size // 7) - 1, fs):
+                    row_data = []
+                    for channel, size in channel_batch_size.items():
+                        part_data = EEG_files[part].get_EEG_by_channel_and_event(channel=channel, event_name=event_name)
+                        row_data.extend(part_data[start: start + size])
+                    train_data_label.append((row_data, label_dic[event_name]))
+                    
+    # test data and labels
+    test_data_label = []
+    for part in test_part_list:
+        for event_name in event_list:
+            if EEG_files[part].event_details.check_has_event(event_name) and EEG_files[part].event_details.check_event_has_start_and_end(event_name):
+                data_length = (EEG_files[part].event_details.events_info[event_name]['end'] - \
+                    EEG_files[part].event_details.events_info[event_name]['start'] - 2 * EEG_buffer) * fs
+                for start in range(0, int(data_length - row_size // 7) - 1, fs):
+                    row_data = []
+                    for channel, size in channel_batch_size.items():
+                        part_data = EEG_files[part].get_EEG_by_channel_and_event(channel=channel, event_name=event_name)
+                        row_data.extend(part_data[start: start + size])
+                    test_data_label.append((row_data, label_dic[event_name]))
+
+    random.shuffle(train_data_label)
+    random.shuffle(test_data_label)
+    train_data_df = pd.DataFrame([dat[0] for dat in train_data_label]).multiply(multiply)
+    test_data_df = pd.DataFrame([dat[0] for dat in test_data_label]).multiply(multiply)
+    train_label_df = pd.DataFrame([dat[1] for dat in train_data_label])
+    test_label_df = pd.DataFrame([dat[1] for dat in test_data_label])
+    print(train_data_df.shape)
+    print(test_data_df.shape)
+    print(train_label_df.shape)
+    print(test_label_df.shape)
+    return train_data_df, test_data_df, train_label_df, test_label_df

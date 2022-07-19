@@ -9,8 +9,8 @@ import os
 from typing import Dict
 import mne
 
-from basic_info import data_folder, VG_file_paths, VG_Hz, EEG_buffer
-from Event_details import Event_time_details
+from Ray.basic_info import data_folder, VG_file_paths, VG_Hz, EEG_buffer
+from Ray.Event_details import Event_time_details
 
 EEG_channels = {1:"Fpz-O1", 2:"Fpz-O2", 3:"Fpz-F7", 4:"F8-F7", 5:"F7-01", 6:"F8-O2", 7:"Fpz-F8"}
 
@@ -72,17 +72,3 @@ def read_VG_to_Raw(part_ID):
     VG_file_path = os.path.join(data_folder, VG_file_paths[part_ID])
     raw = mne.io.read_raw_edf(VG_file_path, exclude=exclude_channels, preload = True)
     return raw
-
-# test: to raw
-# raw = read_VG_to_Raw('VG_01')
-# data = raw.get_data()
-# mne.filter.filter_data(data, sfreq=250, l_freq=0, h_freq=100)
-
-# test: read all EEG files
-# EEG_files = read_all_VG_files()
-# # VG_06 events info
-# EEG_files['VG_06'].event_details.set_exp_datetime("05-10-2021", "13:40:50")
-# EEG_files['VG_06'].event_details.set_event("familiar_music", "13:58:00", "14:04:00")
-
-# print(EEG_files['VG_06'].get_EEG_by_channel_and_event(EEG_channels[1], 'familiar_music'))
-# print(EEG_files['VG_06'].get_EEG_by_channel_and_event(1, 'familiar_music'))

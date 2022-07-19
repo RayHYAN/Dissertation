@@ -9,8 +9,8 @@ import os
 from typing import Dict
 import pandas as pd
 
-from basic_info import data_folder, E4_file_paths, E4_buffer
-from Event_details import Event_time_details
+from Ray.basic_info import data_folder, E4_file_paths, E4_buffer
+from Ray.Event_details import Event_time_details
 
 E4_file_names = ['ACC', 'BVP', 'EDA', 'HR', 'IBI', 'TEMP'] # physiological data, tags.csv not included
 
@@ -56,14 +56,4 @@ def read_E4_file(part_ID) -> E4_data_class:
     E4_part_data = E4_data_class(part_ID, data)
     print("Successfully loaded {} E4 file (physiological data)".format(part_ID))
     return E4_part_data
-
-
-# E4_files = read_all_E4_files()
-# # VG_01 events info
-# E4_files['VG_01'].event_details.set_exp_datetime("08-09-2021")
-# E4_files['VG_01'].event_details.set_event("exper_video", "16:02:00", "16:10:00")
-
-# test
-# print(E4_files['VG_01'].get_E4_by_filename_and_event('HR', 'exper_video'))
-# print(E4_files['VG_01'].E4_data['HR']['data'])
-# print(E4_files['VG_01'].event_details.exp_start_time)
+    

@@ -6,8 +6,8 @@ Created on Wed Jun 29 23:14:19 2022
 """
 
 import json
-from basic_fun import local2unix
-from basic_info import EEG_buffer
+from Ray.basic_fun import local2unix
+from Ray.basic_info import EEG_buffer
 
 all_EEG_events = {
     0: "setup",

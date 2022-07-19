@@ -3,6 +3,7 @@ data_setup.py
 test.ipynb
 dosed/
 EEG_DL/
+eegmodels/
 
 
 # Byte-compiled / optimized / DLL files

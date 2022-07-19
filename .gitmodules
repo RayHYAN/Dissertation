@@ -1,3 +1,6 @@
 [submodule "EEG_DL"]
 	path = EEG_DL
 	url = git@github.com:SuperBruceJia/EEG-DL.git
+[submodule "eegmodels"]
+	path = eegmodels
+	url = git@github.com:vlawhern/arl-eegmodels.git
