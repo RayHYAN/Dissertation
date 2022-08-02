@@ -5,6 +5,7 @@ Created on Wed Jun 29 18:51:32 2022
 @author: Zerui Mu
 """
 
+import random
 import time
 
 def local2unix(datetime):
@@ -16,6 +17,20 @@ def unix2local(timestamp):
     time_local = time.localtime(timestamp)
     datetime = time.strftime("%d-%m-%Y %H:%M:%S", time_local)
     return datetime
+
+def gen_train_test_valid(data, test_ratio = 0.2, val_ratio = 0.2):
+    if test_ratio + val_ratio > 0.5:
+        print("Too much test & validation data!")
+        return None, None, None
+    part_num = len(data.keys())
+    test_part_num = round(part_num * test_ratio) if round(part_num * test_ratio) != 0 else 1
+    val_part_num = round(part_num * val_ratio) if round(part_num * val_ratio) != 0 else 1
+
+    test_part_list = random.sample(list(data.keys()), test_part_num)
+    rest_part = [part for part in data.keys() if part not in test_part_list]
+    val_part_list = random.sample(rest_part, val_part_num)
+    train_part_list = [part for part in rest_part if part not in val_part_list]
+    return train_part_list, test_part_list, val_part_list
 
 def _test_local2unix():
     print(local2unix("08-09-2021 15:44:46"))

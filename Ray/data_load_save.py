@@ -134,6 +134,7 @@ def gen_EEG_traintest_to_csv_part(event_list, multiply, windows = 1, train_ratio
     if EEG_files == None:
         EEG_files, _ = set_up(isE4 = False)
     row_size, fs = 4096, VG_Hz
+    train_num_per_class_limit, test_num_per_class_limit = 2000, 200
     channel_batch_size = {
         'Fpz-O1': row_size // 7,
         'Fpz-O2': row_size // 7,
@@ -151,32 +152,48 @@ def gen_EEG_traintest_to_csv_part(event_list, multiply, windows = 1, train_ratio
     train_part_list = [part for part in EEG_files.keys() if part not in test_part_list]
 
     # train data and labels
-    train_data_label = []
+    train_data_label_dic = {}
     for part in train_part_list:
         for event_name in event_list:
+            if label_dic[event_name] not in train_data_label_dic.keys():
+                train_data_label_dic[label_dic[event_name]] = []
             if EEG_files[part].event_details.check_has_event(event_name) and EEG_files[part].event_details.check_event_has_start_and_end(event_name):
                 data_length = (EEG_files[part].event_details.events_info[event_name]['end'] - \
                     EEG_files[part].event_details.events_info[event_name]['start'] - 2 * EEG_buffer) * fs
                 for start in range(0, int(data_length - row_size // 7) - 1, fs):
+                    if len(train_data_label_dic[label_dic[event_name]]) >= train_num_per_class_limit:
+                        break
                     row_data = []
                     for channel, size in channel_batch_size.items():
                         part_data = EEG_files[part].get_EEG_by_channel_and_event(channel=channel, event_name=event_name)
                         row_data.extend(part_data[start: start + size])
-                    train_data_label.append((row_data, label_dic[event_name]))
+                    train_data_label_dic[label_dic[event_name]].append((row_data, label_dic[event_name]))
+
+    train_data_label = []
+    for l in train_data_label_dic.values():
+        train_data_label.extend(l)
                     
     # test data and labels
-    test_data_label = []
+    test_data_label_dic = {}
     for part in test_part_list:
         for event_name in event_list:
+            if label_dic[event_name] not in test_data_label_dic.keys():
+                test_data_label_dic[label_dic[event_name]] = []
             if EEG_files[part].event_details.check_has_event(event_name) and EEG_files[part].event_details.check_event_has_start_and_end(event_name):
                 data_length = (EEG_files[part].event_details.events_info[event_name]['end'] - \
                     EEG_files[part].event_details.events_info[event_name]['start'] - 2 * EEG_buffer) * fs
                 for start in range(0, int(data_length - row_size // 7) - 1, fs):
+                    if len(test_data_label_dic[label_dic[event_name]]) >= test_num_per_class_limit:
+                        break
                     row_data = []
                     for channel, size in channel_batch_size.items():
                         part_data = EEG_files[part].get_EEG_by_channel_and_event(channel=channel, event_name=event_name)
                         row_data.extend(part_data[start: start + size])
-                    test_data_label.append((row_data, label_dic[event_name]))
+                    test_data_label_dic[label_dic[event_name]].append((row_data, label_dic[event_name]))
+
+    test_data_label = []
+    for l in test_data_label_dic.values():
+        test_data_label.extend(l)
 
     random.shuffle(train_data_label)
     random.shuffle(test_data_label)

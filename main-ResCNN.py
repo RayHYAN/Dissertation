@@ -29,13 +29,13 @@ sess = tf.Session(config=config)
 
 # Your Dataset Location, for example EEG-Motor-Movement-Imagery-Dataset
 # The CSV file should be named as training_set.csv, training_label.csv, test_set.csv, and test_label.csv
-DIR = r'../data/EEG-Motor-Movement-Imagery-Dataset/Ray/'
+classes = 5 # 有几类数据
+DIR = '../data/EEG-Motor-Movement-Imagery-Dataset/Ray/{}classes/'.format(classes)
 SAVE = r'./Dissertation/EEG_DL/Saved_Files/' + Model + '/'
 if not os.path.exists(SAVE):  # If the SAVE folder doesn't exist, create one
     os.mkdir(SAVE)
 
 # Load the dataset, here it uses one-hot representation for labels
-classes = 4
 train_data, train_labels, test_data, test_labels = DatasetLoader(DIR=DIR)
 train_labels = tf.one_hot(indices=train_labels, depth=classes)
 train_labels = tf.squeeze(train_labels).eval(session=sess)
@@ -56,11 +56,11 @@ n_batch = train_data.shape[0] // batch_size
 # Define Placeholders
 # x = tf.placeholder(tf.float32, [None, 4096])
 x = tf.placeholder(tf.float32, [None, 64 * 64])
-y = tf.placeholder(tf.float32, [None, 4])
+y = tf.placeholder(tf.float32, [None, classes])
 keep_prob = tf.placeholder(tf.float32)
 
 # Load Model Network
-prediction = ResNet(Input=x, keep_prob=keep_prob)
+prediction = ResNet(Input=x, keep_prob=keep_prob, classes = classes)
 
 # Load Loss Function
 loss = loss(y=y, prediction=prediction, l2_norm=True)

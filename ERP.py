@@ -90,6 +90,7 @@ from matplotlib import pyplot as plt
 
 # Ray import
 import Ray.data_load_save as data_load_save
+import Ray.basic_fun as basic_fun
 
 # while the default tensorflow ordering is 'channels_last' we set it here
 # to be explicit in case if the user has changed the default ordering
@@ -100,28 +101,42 @@ data_path = sample.data_path()
 
 # Set parameters and read data
 EEG_data, _ = data_load_save.set_up(isE4 = False)
-event_id = dict(familiar_music=0, wildlife_video=1, family_inter=2, Tchaikovsky=3)
-tmin, tmax, windows = -0., 1, 4 # windows: s
-fs = 250
+event_id = dict(familiar_music=1, wildlife_video=2, family_inter=3, Tchaikovsky=4)
+tmin, tmax = -0., 1
+fs, windows, interval = 250, 4, 250 # windows: second, interval: num of data_point
 kernels, chans, samples = 1, 7, windows * fs
 
+# train: test: validate = 6:2:2
+train_part_list, test_part_list, val_part_list = basic_fun.gen_train_test_valid(EEG_data)
+train_test_val_data = {
+    'train': {'data': [], 'label': []},
+    'test': {'data': [], 'label': []},
+    'val': {'data': [], 'label': []}
+}
+
 for partID in EEG_data.keys():
+    if partID in train_part_list:
+        dataset = 'train'
+    elif partID in test_part_list:
+        dataset = 'test'
+    else: dataset = 'val'
+
     for event in event_id.keys():
-        event_data = EEG_data[partID].get_EEG_by_event(event)
-        # data_point_metric
-        exit()
+        if EEG_data[partID].event_details.check_has_event(event) and EEG_data[partID].event_details.check_event_has_start_and_end(event):
+            event_data = EEG_data[partID].get_EEG_by_event(event)
+            for start in range(0, len(event_data[0]) - samples, interval):
+                data_point_metric = []
+                for channel in event_data:
+                    data_point_metric.append([data_point for data_point in channel[start: start+samples]])
+                train_test_val_data[dataset]['data'].append(data_point_metric)
+                train_test_val_data[dataset]['label'].append(event_id[event])
 
-
-
-
-
-# take 50/25/25 percent of the data to train/validate/test
-# X_train      = X[0:144,]
-# Y_train      = y[0:144]
-# X_validate   = X[144:216,]
-# Y_validate   = y[144:216]
-# X_test       = X[216:,]
-# Y_test       = y[216:]
+Y_train = np.array(train_test_val_data['train']['label'], dtype=np.int32)
+Y_test = np.array(train_test_val_data['test']['label'], dtype=np.int32)
+Y_validate = np.array(train_test_val_data['val']['label'], dtype=np.int32)
+X_train = np.array(train_test_val_data['train']['data'], dtype=float)
+X_test = np.array(train_test_val_data['test']['data'], dtype=float)
+X_validate = np.array(train_test_val_data['val']['data'], dtype=float)
 
 ############################# EEGNet portion ##################################
 
@@ -129,6 +144,13 @@ for partID in EEG_data.keys():
 Y_train      = np_utils.to_categorical(Y_train-1)
 Y_validate   = np_utils.to_categorical(Y_validate-1)
 Y_test       = np_utils.to_categorical(Y_test-1)
+
+print(X_train.shape)
+print(X_test.shape)
+print(X_validate.shape)
+print(Y_train.shape)
+print(Y_test.shape)
+print(Y_validate.shape)
 
 # convert data to NHWC (trials, channels, samples, kernels) format. Data 
 # contains 60 channels and 151 time-points. Set the number of kernels to 1.
@@ -154,7 +176,8 @@ model.compile(loss='categorical_crossentropy', optimizer='adam',
 numParams    = model.count_params()    
 
 # set a valid path for your system to record model checkpoints
-checkpointer = ModelCheckpoint(filepath='./tmp/checkpoint.h5', verbose=1,
+tmp_file_path = r'./Dissertation/eegmodels/examples/tmp/checkpoint.h5'
+checkpointer = ModelCheckpoint(filepath=tmp_file_path, verbose=1,
                                save_best_only=True)
 
 ###############################################################################
@@ -178,7 +201,7 @@ fittedModel = model.fit(X_train, Y_train, batch_size = 16, epochs = 300,
                         callbacks=[checkpointer], class_weight = class_weights)
 
 # load optimal weights
-model.load_weights('./tmp/checkpoint.h5')
+model.load_weights(tmp_file_path)
 
 ###############################################################################
 # can alternatively used the weights provided in the repo. If so it should get
