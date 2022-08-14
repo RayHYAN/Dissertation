@@ -65,6 +65,7 @@
 """
 
 import numpy as np
+import random
 
 # mne imports
 import mne
@@ -72,7 +73,8 @@ from mne import io
 from mne.datasets import sample
 
 # EEGNet-specific imports
-from eegmodels.EEGModels import EEGNet
+from eegmodels.EEGModels import EEGNet, ShallowConvNet, DeepConvNet
+import tensorflow as tf
 from tensorflow.keras import utils as np_utils
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras import backend as K
@@ -100,8 +102,10 @@ K.set_image_data_format('channels_last')
 data_path = sample.data_path()
 
 # Set parameters and read data
+modelNet = 'EEGNet' # EEGNet, ShallowConvNet, DeepConvNet
 EEG_data, _ = data_load_save.set_up(isE4 = False)
-event_id = dict(familiar_music=1, wildlife_video=2, family_inter=3, Tchaikovsky=4)
+event_id = dict(familiar_music=1, wildlife_video=2, family_inter=3, Tchaikovsky=4, exper_video=5)
+# event_id = dict(familiar_music=1, wildlife_video=2, family_inter=3, Tchaikovsky=4)
 tmin, tmax = -0., 1
 fs, windows, interval = 250, 4, 250 # windows: second, interval: num of data_point
 kernels, chans, samples = 1, 7, windows * fs
@@ -109,9 +113,21 @@ kernels, chans, samples = 1, 7, windows * fs
 # train: test: validate = 6:2:2
 train_part_list, test_part_list, val_part_list = basic_fun.gen_train_test_valid(EEG_data)
 train_test_val_data = {
-    'train': {'data': [], 'label': []},
-    'test': {'data': [], 'label': []},
-    'val': {'data': [], 'label': []}
+    'train': [],
+    'test': [],
+    'val': []
+}
+
+# set a limit to balance data
+train_test_val_data_num = {
+    'train': {1:0, 2:0, 3:0, 4:0, 5:0},
+    'test': {1:0, 2:0, 3:0, 4:0, 5:0},
+    'val': {1:0, 2:0, 3:0, 4:0, 5:0},
+}
+train_test_val_class_num_limit = {
+    'train': 2000,
+    'test': 400,
+    'val': 400
 }
 
 for partID in EEG_data.keys():
@@ -125,18 +141,26 @@ for partID in EEG_data.keys():
         if EEG_data[partID].event_details.check_has_event(event) and EEG_data[partID].event_details.check_event_has_start_and_end(event):
             event_data = EEG_data[partID].get_EEG_by_event(event)
             for start in range(0, len(event_data[0]) - samples, interval):
+                if train_test_val_data_num[dataset][event_id[event]] >= train_test_val_class_num_limit[dataset]:
+                    break
                 data_point_metric = []
                 for channel in event_data:
                     data_point_metric.append([data_point for data_point in channel[start: start+samples]])
-                train_test_val_data[dataset]['data'].append(data_point_metric)
-                train_test_val_data[dataset]['label'].append(event_id[event])
+                train_test_val_data[dataset].append((data_point_metric, event_id[event]))
+                train_test_val_data_num[dataset][event_id[event]] += 1
 
-Y_train = np.array(train_test_val_data['train']['label'], dtype=np.int32)
-Y_test = np.array(train_test_val_data['test']['label'], dtype=np.int32)
-Y_validate = np.array(train_test_val_data['val']['label'], dtype=np.int32)
-X_train = np.array(train_test_val_data['train']['data'], dtype=float)
-X_test = np.array(train_test_val_data['test']['data'], dtype=float)
-X_validate = np.array(train_test_val_data['val']['data'], dtype=float)
+print(train_test_val_data_num)
+
+random.shuffle(train_test_val_data['train'])
+random.shuffle(train_test_val_data['test'])
+random.shuffle(train_test_val_data['val'])
+
+Y_train = np.array([item[1] for item in train_test_val_data['train']], dtype=np.int32)
+Y_test = np.array([item[1] for item in train_test_val_data['test']], dtype=np.int32)
+Y_validate = np.array([item[1] for item in train_test_val_data['val']], dtype=np.int32)
+X_train = np.array([item[0] for item in train_test_val_data['train']], dtype=float)
+X_test = np.array([item[0] for item in train_test_val_data['test']], dtype=float)
+X_validate = np.array([item[0] for item in train_test_val_data['val']], dtype=float)
 
 ############################# EEGNet portion ##################################
 
@@ -162,11 +186,22 @@ print('X_train shape:', X_train.shape)
 print(X_train.shape[0], 'train samples')
 print(X_test.shape[0], 'test samples')
 
+print(modelNet)
+if modelNet == 'EEGNet':
 # configure the EEGNet-8,2,16 model with kernel length of 32 samples (other 
 # model configurations may do better, but this is a good starting point)
-model = EEGNet(nb_classes = 4, Chans = chans, Samples = samples, 
-               dropoutRate = 0.5, kernLength = 32, F1 = 8, D = 2, F2 = 16, 
-               dropoutType = 'Dropout')
+    model = EEGNet(nb_classes = len(event_id.keys()), Chans = chans, Samples = samples, 
+                dropoutRate = 0.5, kernLength = 32, F1 = 8, D = 2, F2 = 16, 
+                dropoutType = 'Dropout')
+elif modelNet == 'ShallowConvNet':
+    model = ShallowConvNet(nb_classes = len(event_id.keys()), Chans = chans, Samples = samples, 
+               dropoutRate = 0.5)
+elif modelNet == 'DeepConvNet':
+    model = DeepConvNet(nb_classes = len(event_id.keys()), Chans = chans, Samples = samples, 
+               dropoutRate = 0.5)
+else:
+    print('Wrong model net name!')
+    exit()
 
 # compile the model and set the optimizers
 model.compile(loss='categorical_crossentropy', optimizer='adam', 
@@ -189,7 +224,8 @@ checkpointer = ModelCheckpoint(filepath=tmp_file_path, verbose=1,
 
 # the syntax is {class_1:weight_1, class_2:weight_2,...}. Here just setting
 # the weights all to be 1
-class_weights = {0:1, 1:1, 2:1, 3:1}
+class_weights = {i:1 for i in range(len(event_id.keys()))}
+# class_weights = {0:1, 1:1, 2:1, 3:1}
 
 ################################################################################
 # fit the model. Due to very small sample sizes this can get
@@ -221,41 +257,66 @@ preds       = probs.argmax(axis = -1)
 acc         = np.mean(preds == Y_test.argmax(axis=-1))
 print("Classification accuracy: %f " % (acc))
 
+print(probs[:100])
+
+all_y_T = {}
+all_prediction_T = {}
+all_T_all_Num = {}
+all_T_T = {}
+all_T_T_percent = {}
+
+for i in event_id.values():
+    all_y_T[i] = tf.equal(tf.argmax(Y_test, 1), i-1)
+    all_prediction_T[i] = tf.equal(tf.argmax(probs, 1), i-1)
+    all_T_all_Num[i] = tf.reduce_sum(tf.cast(all_y_T[i], tf.float32))
+
+for i in event_id.values():
+    all_T_T[i] = {}
+    for j in event_id.values():
+        all_T_T[i][j] = tf.reduce_sum(tf.cast(tf.math.logical_and(all_y_T[i], all_prediction_T[j]), tf.float32))
+
+for i in event_id.values():
+    all_T_T_percent[i] = {}
+    for j in event_id.values():
+        all_T_T_percent[i][j] = tf.divide(all_T_T[i][j], all_T_all_Num[i])
+
+for i in all_T_T_percent.keys():
+    print(all_T_T_percent[i])
 
 ############################# PyRiemann Portion ##############################
 
 # code is taken from PyRiemann's ERP sample script, which is decoding in 
 # the tangent space with a logistic regression
 
-n_components = 2  # pick some components
+# n_components = 2  # pick some components
 
-# set up sklearn pipeline
-clf = make_pipeline(XdawnCovariances(n_components),
-                    TangentSpace(metric='riemann'),
-                    LogisticRegression())
+# # set up sklearn pipeline
+# clf = make_pipeline(XdawnCovariances(n_components),
+#                     TangentSpace(metric='riemann'),
+#                     LogisticRegression())
 
-preds_rg     = np.zeros(len(Y_test))
+# preds_rg     = np.zeros(len(Y_test))
 
-# reshape back to (trials, channels, samples)
-X_train      = X_train.reshape(X_train.shape[0], chans, samples)
-X_test       = X_test.reshape(X_test.shape[0], chans, samples)
+# # reshape back to (trials, channels, samples)
+# X_train      = X_train.reshape(X_train.shape[0], chans, samples)
+# X_test       = X_test.reshape(X_test.shape[0], chans, samples)
 
-# train a classifier with xDAWN spatial filtering + Riemannian Geometry (RG)
-# labels need to be back in single-column format
-clf.fit(X_train, Y_train.argmax(axis = -1))
-preds_rg     = clf.predict(X_test)
+# # train a classifier with xDAWN spatial filtering + Riemannian Geometry (RG)
+# # labels need to be back in single-column format
+# clf.fit(X_train, Y_train.argmax(axis = -1))
+# preds_rg     = clf.predict(X_test)
 
-# Printing the results
-acc2         = np.mean(preds_rg == Y_test.argmax(axis = -1))
-print("Classification accuracy: %f " % (acc2))
+# # Printing the results
+# acc2         = np.mean(preds_rg == Y_test.argmax(axis = -1))
+# print("Classification accuracy: %f " % (acc2))
 
-# plot the confusion matrices for both classifiers
-names        = ['audio left', 'audio right', 'vis left', 'vis right']
-plt.figure(0)
-plot_confusion_matrix(preds, Y_test.argmax(axis = -1), names, title = 'EEGNet-8,2')
+# # plot the confusion matrices for both classifiers
+# names        = ['audio left', 'audio right', 'vis left', 'vis right']
+# plt.figure(0)
+# plot_confusion_matrix(preds, Y_test.argmax(axis = -1), names, title = 'EEGNet-8,2')
 
-plt.figure(1)
-plot_confusion_matrix(preds_rg, Y_test.argmax(axis = -1), names, title = 'xDAWN + RG')
+# plt.figure(1)
+# plot_confusion_matrix(preds_rg, Y_test.argmax(axis = -1), names, title = 'xDAWN + RG')
 
 
 

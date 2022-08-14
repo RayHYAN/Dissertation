@@ -46,7 +46,7 @@ def gen_EEG_train_test_to_csv(event_list, multiply, func, windows = 1, train_rat
         data_count[d] += 1
     print("test data label: {}".format(data_count))
 
-    data_folder = os.path.join(motor_movement_data_folder, './Ray/{}classes/'.format(classes))
+    data_folder = os.path.join(motor_movement_data_folder, './Ray/{}classes_{}/'.format(classes, func))
     if not os.path.exists(data_folder):  # If the folder doesn't exist, create one
         os.mkdir(data_folder)
     train_data.to_csv(os.path.join(data_folder, './training_set.csv'), header=None, index=None)
@@ -73,4 +73,4 @@ if __name__ == '__main__':
 
     # Generate train and test dataset for EEG_DL repository
     event_list_EEGDL = ["familiar_music", "wildlife_video", "family_inter", "Tchaikovsky", "exper_video"]
-    gen_EEG_train_test_to_csv(event_list_EEGDL, multiply=10000, func='part', EEG_data=EEG_files)
+    gen_EEG_train_test_to_csv(event_list_EEGDL, multiply=10000, func='mix', EEG_data=EEG_files)

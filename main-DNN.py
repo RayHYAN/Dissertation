@@ -62,7 +62,7 @@ num_epoch = 300   # The number of Epochs that the Model run
 keep_rate = 0.75  # Keep rate of the Dropout
 lr = tf.constant(1e-4, dtype=tf.float32)  # Learning rate
 lr_decay_epoch = 50    # Every (50) epochs, the learning rate decays
-lr_decay       = 0.50  # Learning rate Decay by (50%)
+lr_decay       = 0.5  # Learning rate Decay by (50%)
 
 batch_size = 512
 n_batch = train_data.shape[0] // batch_size
@@ -90,13 +90,13 @@ prediction, features = DNN(Input=x,
                            biases_2=biases_2)
 
 # Load Loss Function
-loss = loss(y=y, prediction=prediction, l2_norm=True)
+loss, _loss = loss(y=y, prediction=prediction, l2_norm=True)
 
 # Load Optimizer
 train_step = tf.train.AdamOptimizer(lr).minimize(loss)
 
 # Load Evaluation Metrics
-Global_Average_Accuracy = evaluation(y=y, prediction=prediction)
+Global_Average_Accuracy, _acc = evaluation(y=y, prediction=prediction)
 
 # Merge all the summaries
 merged = tf.summary.merge_all()
