@@ -93,7 +93,7 @@ def gen_EEG_traintest_to_csv_mix(event_list, multiply, windows = 1, train_ratio 
     # mix all partcipants data together and separate train_set and test_set by train_ratio
     if EEG_files == None:
         EEG_files, _ = set_up(isE4 = False)
-    row_size, fs = 4096, VG_Hz
+    row_size, fs, interval = 4096, VG_Hz, fs*2 
     # channel_batch_size = {
     #     'Fpz-O1': row_size // 7,
     #     'Fpz-O2': row_size // 7,
@@ -131,7 +131,7 @@ def gen_EEG_traintest_to_csv_mix(event_list, multiply, windows = 1, train_ratio 
 
                 # test data
                 for start in range(0, int(test_length - row_size // len(channel_batch_size.keys())*0.5), \
-                                    int(internal_ratio_for_each_event[event_name]*fs)):
+                                    int(internal_ratio_for_each_event[event_name]*interval)):
                     row_data = []
                     for channel, size in channel_batch_size.items():
                         row_data.extend(event_data_all_chans[channel][start: start+size])
@@ -140,7 +140,7 @@ def gen_EEG_traintest_to_csv_mix(event_list, multiply, windows = 1, train_ratio 
                 # train data
                 for start in range(int(test_length + row_size//len(channel_batch_size.keys())*0.5), \
                                     int(data_length - row_size//len(channel_batch_size.keys()))-1, \
-                                    int(internal_ratio_for_each_event[event_name]*fs)):
+                                    int(internal_ratio_for_each_event[event_name]*interval)):
                     row_data = []
                     for channel, size in channel_batch_size.items():
                         row_data.extend(event_data_all_chans[channel][start: start+size])
@@ -162,8 +162,8 @@ def gen_EEG_traintest_to_csv_part(event_list, multiply, windows = 1, train_ratio
     # separate train_set and test_set by participant and the train_ratio
     if EEG_files == None:
         EEG_files, _ = set_up(isE4 = False)
-    row_size, fs = 4096, VG_Hz
-    train_num_per_class_limit, test_num_per_class_limit = 2000, 200
+    row_size, fs, interval = 4096, VG_Hz, VG_Hz*2
+    train_num_per_class_limit, test_num_per_class_limit = 1000, 100
     # channel_batch_size = {
     #     'Fpz-O1': row_size // 7,
     #     'Fpz-O2': row_size // 7,
@@ -195,7 +195,7 @@ def gen_EEG_traintest_to_csv_part(event_list, multiply, windows = 1, train_ratio
             if EEG_files[part].event_details.check_has_event(event_name) and EEG_files[part].event_details.check_event_has_start_and_end(event_name):
                 data_length = (EEG_files[part].event_details.events_info[event_name]['end'] - \
                     EEG_files[part].event_details.events_info[event_name]['start'] - 2 * EEG_buffer) * fs
-                for start in range(0, int(data_length - row_size // len(channel_batch_size.keys())) - 1, fs):
+                for start in range(0, int(data_length - row_size // len(channel_batch_size.keys())) - 1, interval):
                     if len(train_data_label_dic[label_dic[event_name]]) >= train_num_per_class_limit:
                         break
                     row_data = []
@@ -217,7 +217,7 @@ def gen_EEG_traintest_to_csv_part(event_list, multiply, windows = 1, train_ratio
             if EEG_files[part].event_details.check_has_event(event_name) and EEG_files[part].event_details.check_event_has_start_and_end(event_name):
                 data_length = (EEG_files[part].event_details.events_info[event_name]['end'] - \
                     EEG_files[part].event_details.events_info[event_name]['start'] - 2 * EEG_buffer) * fs
-                for start in range(0, int(data_length - row_size // len(channel_batch_size.keys())) - 1, fs):
+                for start in range(0, int(data_length - row_size // len(channel_batch_size.keys())) - 1, interval):
                     if len(test_data_label_dic[label_dic[event_name]]) >= test_num_per_class_limit:
                         break
                     row_data = []

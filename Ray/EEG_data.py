@@ -32,6 +32,7 @@ class EEG_data_class(object):
 
     def get_EEG_by_channel_and_event(self, channel, event_name):
         # channel can be the name or its index
+        # print(channel, event_name)
         start, end = self._get_event_period_by_name(event_name)
         if channel in EEG_channels.keys():
             return self.EEG_data[EEG_channels[channel]][int(start * VG_Hz): int(end * VG_Hz)]
@@ -40,13 +41,22 @@ class EEG_data_class(object):
         else:
             print("The input channel ({}) is wrong!, Please check.".format(channel))
 
-    def get_EEG_by_event(self, event_name):
+    def get_EEG_by_event(self, event_name, channel_list = [k for k in EEG_channels.keys()]):
         # get all 7 EEG channels data
         event_data = []
-        for channel in EEG_channels:
+        for channel in channel_list:
             channel_data = self.get_EEG_by_channel_and_event(channel, event_name)
             event_data.append(channel_data)
         return event_data
+
+    def get_event_duration(self, event_name):
+        if event_name not in self.event_details.events_info.keys():
+            return None
+        start = self.event_details.events_info[event_name]['start']
+        end = self.event_details.events_info[event_name]['end']
+        if start == None or end == None:
+            return None
+        return end - start
 
 def read_all_VG_files() -> Dict[str, EEG_data_class]:
     return {part_ID: read_VG_file(part_ID) for part_ID in VG_file_paths.keys()}

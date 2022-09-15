@@ -23,8 +23,20 @@ def gen_train_test_valid(data, test_ratio = 0.2, val_ratio = 0.2):
         print("Too much test & validation data!")
         return None, None, None
     part_num = len(data.keys())
-    test_part_num = round(part_num * test_ratio) if round(part_num * test_ratio) != 0 else 1
-    val_part_num = round(part_num * val_ratio) if round(part_num * val_ratio) != 0 else 1
+    if test_ratio == 0.0:
+        test_part_num = 0
+    elif round(part_num * test_ratio) != 0:
+        test_part_num = round(part_num * test_ratio)
+    else: 
+        test_part_num = 1
+    if val_ratio == 0.0:
+        val_part_num = 0
+    elif round(part_num * val_ratio) != 0:
+        val_part_num = round(part_num * val_ratio)
+    else:
+        val_part_num = 1
+    # test_part_num = round(part_num * test_ratio) if round(part_num * test_ratio) != 0 else 1
+    # val_part_num = round(part_num * val_ratio) if round(part_num * val_ratio) != 0 else 1
 
     test_part_list = random.sample(list(data.keys()), test_part_num)
     rest_part = [part for part in data.keys() if part not in test_part_list]

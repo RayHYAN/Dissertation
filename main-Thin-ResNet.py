@@ -8,18 +8,20 @@ from __future__ import division
 
 # Hide the Configuration and Warnings
 import os
+import pandas as pd
+from matplotlib import pyplot as plt
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
 
 import random
 import numpy as np
 import tensorflow as tf
 from EEG_DL.Models.DatasetAPI.DataLoader import DatasetLoader
-from EEG_DL.Models.Network.CNN import CNN
+from EEG_DL.Models.Network.Thin_ResNet import Thin_ResNet
 from EEG_DL.Models.Loss_Function.Loss import loss
 from EEG_DL.Models.Evaluation_Metrics.Metrics import evaluation
 
 # Model Name
-Model = 'Convolutional_Neural_Network'
+Model = 'Thin_Residual_Convolutional_Neural_Network'
 
 # Clear all the stack and use GPU resources as much as possible
 tf.reset_default_graph()
@@ -30,8 +32,15 @@ sess = tf.Session(config=config)
 # Your Dataset Location, for example EEG-Motor-Movement-Imagery-Dataset
 # The CSV file should be named as training_set.csv, training_label.csv, test_set.csv, and test_label.csv
 classes = 5 # 有几类数据
-DIR = '../data/EEG-Motor-Movement-Imagery-Dataset/Ray/{}classes/'.format(classes)
+dataset_func = 'mix' # mix and part (mix together or hold-out participant)
+DIR = '../data/EEG-Motor-Movement-Imagery-Dataset/Ray/{}classes_{}/'.format(classes, dataset_func)
 SAVE = r'./Dissertation/EEG_DL/Saved_Files/' + Model + '/'
+model_results = {
+    'train_loss': [],
+    'train_acc': [],
+    'test_loss': [],
+    'test_acc': [],
+}
 if not os.path.exists(SAVE):  # If the SAVE folder doesn't exist, create one
     os.mkdir(SAVE)
 
@@ -41,18 +50,14 @@ train_labels = tf.one_hot(indices=train_labels, depth=classes)
 train_labels = tf.squeeze(train_labels).eval(session=sess)
 test_labels = tf.one_hot(indices=test_labels, depth=classes)
 test_labels = tf.squeeze(test_labels).eval(session=sess)
-print("train_data: {}".format(train_data.shape))
-print("train_labels: {}".format(train_labels.shape))
-print("test_data: {}".format(test_data.shape))
-print("test_labels: {}".format(test_labels.shape))
 
 # Model Hyper-parameters
-num_epoch = 50   # The number of Epochs that the Model run
-keep_rate = 0.75  # Keep rate of the Dropout
-
-lr = tf.constant(1e-4, dtype=tf.float32)  # Learning rate
-lr_decay_epoch = 100    # Every (50) epochs, the learning rate decays
-lr_decay       = 0.50  # Learning rate Decay by (50%)
+num_epoch = 100   # The number of Epochs that the Model run
+keep_rate = 0.8  # Keep rate of the Dropout
+lr_num = 1e-4
+lr = tf.constant(lr_num, dtype=tf.float32)  # Learning rate
+lr_decay_epoch = 50    # Every (50) epochs, the learning rate decays
+lr_decay       = 0.75  # Learning rate Decay by (lr = lr  * decay)
 
 batch_size = 64
 n_batch = train_data.shape[0] // batch_size
@@ -63,7 +68,7 @@ y = tf.placeholder(tf.float32, [None, classes])
 keep_prob = tf.placeholder(tf.float32)
 
 # Load Model Network
-prediction = CNN(Input=x, keep_prob=keep_prob, classes = classes)
+prediction = Thin_ResNet(Input=x, keep_prob=keep_prob, classes = classes)
 
 # Load Loss Function
 loss, _loss = loss(y=y, prediction=prediction, l2_norm=True)
@@ -82,6 +87,7 @@ test_writer = tf.summary.FileWriter(SAVE + '/test_Writer')
 # Initialize all the variables
 sess.run(tf.global_variables_initializer())
 for epoch in range(num_epoch + 1):
+    print("RAY-{}".format(epoch))
     # U can use learning rate decay or not
     # Here, we set a minimum learning rate
     # If u don't want this, u definitely can modify the following lines
@@ -104,7 +110,8 @@ for epoch in range(num_epoch + 1):
     # Show Accuracy and Loss on Training and Test Set
     # Here, for training set, we only show the result of first 100 samples
     # If u want to show the result on the entire training set, please modify it.
-    train_accuracy, train_loss = sess.run([Global_Average_Accuracy, loss], feed_dict={x: train_data[0:100], y: train_labels[0:100], keep_prob: 1.0})
+    train_accuracy, train_loss, _ = sess.run([Global_Average_Accuracy, loss, _loss], feed_dict={x: train_data[0:100], y: train_labels[0:100], keep_prob: 1.0})
+    print(_)
     Test_summary, test_accuracy, test_loss = sess.run([merged, Global_Average_Accuracy, loss], feed_dict={x: test_data, y: test_labels, keep_prob: 1.0})
     test_writer.add_summary(Test_summary, epoch)
 
@@ -113,6 +120,10 @@ for epoch in range(num_epoch + 1):
     print("Iter " + str(epoch) + ", Testing Loss: " + str(test_loss) + ", Training Loss: " + str(train_loss))
     print("Learning rate is ", learning_rate)
     print('\n')
+    model_results['test_acc'].append(test_accuracy)
+    model_results['test_loss'].append(test_loss)
+    model_results['train_acc'].append(train_accuracy)
+    model_results['train_loss'].append(train_loss)
 
     # Save the prediction and labels for testing set
     # The "labels_for_test.csv" is the same as the "test_label.csv"
@@ -121,6 +132,27 @@ for epoch in range(num_epoch + 1):
         output_prediction = sess.run(prediction, feed_dict={x: test_data, y: test_labels, keep_prob: 1.0})
         np.savetxt(SAVE + "prediction_for_test.csv", output_prediction, delimiter=",")
         np.savetxt(SAVE + "labels_for_test.csv", test_labels, delimiter=",")
+
+MODEL_RES_DIR = './result/{}_{}_{}_{}.csv'.format(Model, keep_rate, lr_num, batch_size)
+res_df = pd.DataFrame(model_results)
+res_df.to_csv(MODEL_RES_DIR, index = None, encoding='utf8')
+
+# 存储数据！！！
+fig = plt.figure()
+x = [i for i in range(num_epoch+1)]
+ax1 = fig.add_subplot(2, 2, 1)
+ax1.plot(x, model_results['test_acc'])
+ax1.set_title('test_acc')
+ax2 = fig.add_subplot(2, 2, 2)
+ax2.plot(x, model_results['test_loss'])
+ax2.set_title('test_loss')
+ax3 = fig.add_subplot(2, 2, 3)
+ax3.plot(x, model_results['train_acc'])
+ax3.set_title('train_acc')
+ax4 = fig.add_subplot(2, 2, 4)
+ax4.plot(x, model_results['train_loss'])
+ax4.set_title('train_loss')
+plt.show()
 
 train_writer.close()
 test_writer.close()
